@@ -19,9 +19,9 @@ void loop() { vTaskDelete(NULL); }
 
 void send_to_wire_on_request()
 {
-  const float co  = map(analogRead(port_CO),  0, 1023.0, 1, 1000);
-  const float nh3 = map(analogRead(port_NH3), 0, 1023.0, 1, 500);
-  const float no2 = map(analogRead(port_NO2), 0, 1023.0, 5, 1000) * 0.01f;
+  const float co  = map(analogRead(port_CO),  0, 4095.0f, 1, 1000);
+  const float nh3 = map(analogRead(port_NH3), 0, 4095.0f, 1, 500);
+  const float no2 = map(analogRead(port_NO2), 0, 4095.0f, 5, 1000) * 0.01f;
 
   CustomSerial::command_package cmd(this_device, 
     "/co",  co,
