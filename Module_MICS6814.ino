@@ -1,33 +1,69 @@
-#include <Arduino.h>
-#include <Wire.h>
-#include "Serial/package.h"
+#include "mmics6814.h"
+#include "Serial/packaging.h"
+
+using namespace CS;
+
+PackagedWired* wire;
+mMICS* mcs;
+const auto this_device = device_id::MICS_6814_SENSOR;
 
 constexpr int port_CO  = GPIO_NUM_27;
 constexpr int port_NH3 = GPIO_NUM_26;
 constexpr int port_NO2 = GPIO_NUM_25;
 
-const auto this_device = CustomSerial::device_id::MICS_6814_SENSOR;
+void callback(void*, const uint8_t, const char*, const uint8_t);
   
-void send_to_wire_on_request();
+void setup() {
+    Serial.begin(115200);
+    while(!Serial);
 
-void setup()
-{
-  CustomSerial::begin_slave(this_device, send_to_wire_on_request);
+    Serial.printf("Starting SLAVE\n");
+    
+    mcs = new mMICS(port_CO, port_NH3, port_NO2);
+    
+    wire = new PackagedWired(config()
+        .set_slave(this_device)
+        .set_slave_callback(callback)
+        .set_led(2)
+    );
 }
 
+void callback(void* rw, const uint8_t expects, const char* received, const uint8_t length)
+{
+    if (length != sizeof(Requester)) return;
+    
+    PackagedWired& w = *(PackagedWired*) rw;
+    Requester req(received);
+    
+    switch(req.get_offset()) {
+    case 0:
+    {
+        const float val = mcs->get_co();
+        Command cmd("/mics6814/co", val);
+        w.slave_reply_from_callback(cmd);
+    }
+    break;
+    case 1:
+    {
+        const float val = mcs->get_nh3();
+        Command cmd("/mics6814/nh3", val);
+        w.slave_reply_from_callback(cmd);
+    }
+    break;
+    case 2:
+    {
+        const float val = mcs->get_no2();
+        Command cmd("/mics6814/no2", val);
+        w.slave_reply_from_callback(cmd);
+    }
+    break;
+    default:
+    {
+        Command cmd; // invalid
+        w.slave_reply_from_callback(cmd);
+    }
+    }
+}
+
+// unused
 void loop() { vTaskDelete(NULL); }
-
-void send_to_wire_on_request()
-{
-  const float co  = map(analogRead(port_CO),  0, 4095.0f, 1, 1000);
-  const float nh3 = map(analogRead(port_NH3), 0, 4095.0f, 1, 500);
-  const float no2 = map(analogRead(port_NO2), 0, 4095.0f, 5, 1000) * 0.01f;
-
-  CustomSerial::command_package cmd(this_device, 
-    "/co",  co,
-    "/nh3", nh3,
-    "/no2", no2
-  );
-
-  CustomSerial::write(cmd);
-}
