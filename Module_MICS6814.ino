@@ -1,5 +1,6 @@
 #include "mmics6814.h"
 #include "Serial/packaging.h"
+#include "Serial/flags.h"
 
 using namespace CS;
 
@@ -15,9 +16,6 @@ void callback(void*, const uint8_t, const char*, const uint8_t);
   
 void setup() {
     Serial.begin(115200);
-    while(!Serial);
-
-    Serial.printf("Starting SLAVE\n");
     
     mcs = new mMICS(port_CO, port_NH3, port_NO2);
     
@@ -38,19 +36,29 @@ void callback(void* rw, const uint8_t expects, const char* received, const uint8
     switch(req.get_offset()) {
     case 0:
     {
+        FlagWrapper fw;
+        if (mcs->has_issues())              fw |= device_flags::HAS_ISSUES;
+        if (mcs->has_new_data_autoreset())  fw |= device_flags::HAS_NEW_DATA;
+        
+        Command cmd("#FLAGS", (uint64_t)fw);
+        w.slave_reply_from_callback(cmd);
+    }
+    break;
+    case 1:
+    {
         const float val = mcs->get_co();
         Command cmd("/mics6814/co", val);
         w.slave_reply_from_callback(cmd);
     }
     break;
-    case 1:
+    case 2:
     {
         const float val = mcs->get_nh3();
         Command cmd("/mics6814/nh3", val);
         w.slave_reply_from_callback(cmd);
     }
     break;
-    case 2:
+    case 3:
     {
         const float val = mcs->get_no2();
         Command cmd("/mics6814/no2", val);

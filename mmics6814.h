@@ -10,15 +10,10 @@ public:
     {   
     }
     
-    float get_co() const {
-        return map(analogRead(m_co),  0, 4095.0f, 1, 1000);
-    }
+    float get_co() const { return map(analogRead(m_co),  0, 4095.0f, 1, 1000); }    
+    float get_nh3() const { return map(analogRead(m_nh3), 0, 4095.0f, 1, 500); }    
+    float get_no2() const { return map(analogRead(m_no2), 0, 4095.0f, 5, 1000) * 0.01f; }
     
-    float get_nh3() const {
-        return map(analogRead(m_nh3), 0, 4095.0f, 1, 500);
-    }
-    
-    float get_no2() const {
-        return map(analogRead(m_no2), 0, 4095.0f, 5, 1000) * 0.01f;
-    }
+    bool has_issues() const { return false; }
+    bool has_new_data_autoreset() { return true; }
 };
